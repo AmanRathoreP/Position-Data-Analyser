@@ -38,7 +38,10 @@ def create_layout():
         dbc.Row([
             dbc.Col([
                 html.Hr(),
-                html.P("© 2025 Aman Rathore", className="text-center")
+                html.P([
+                    "© 2025 ", 
+                    html.A("Aman Rathore", href="https://amanr.me", target="_blank")
+                ], className="text-center")
             ])
         ])
     ], fluid=True)
