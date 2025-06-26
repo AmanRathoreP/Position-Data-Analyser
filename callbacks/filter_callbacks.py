@@ -1,12 +1,14 @@
 # Author: Aman Rathore
 
-from dash.dependencies import Input, Output, State, ALL  # Add ALL here
-from dash import html, dcc, callback_context  # Add callback_context here
+from dash.dependencies import Input, Output, State, ALL
+from dash import html, dcc, callback_context
+import dash
+import base64
 import json
 import pandas as pd
 import dash_bootstrap_components as dbc
 
-from utils.data_processing import get_data_summary, filter_data, extract_time_series, add_metadata_to_list
+from utils.data_processing import get_data_summary, filter_data, extract_time_series
 from utils.plot_utils import create_time_series_plot
 
 def register_filter_callbacks(app):
@@ -77,28 +79,6 @@ def register_filter_callbacks(app):
         
         return summary_html, [header_row] + bodypart_items
 
-    # Add this callback to collect bodypart names and selection states
-    @app.callback(
-        Output("bodyparts-names-store", "data"),
-        [Input({"type": "bodypart-name", "index": ALL}, "value"),
-         Input({"type": "bodypart-checkbox", "index": ALL}, "value")]
-    )
-    def update_bodyparts_names(names, checkboxes):
-        """Store the body part names and selection states."""
-        if not names or not checkboxes:
-            return {}
-        
-        # Create a dictionary with all bodypart data
-        bodyparts_data = {}
-        for i in range(len(names)):
-            idx = i  # The index within the inputs list matches the bodypart index
-            bodyparts_data[str(idx)] = {
-                "name": names[i],
-                "include": checkboxes[i]
-            }
-        
-        return bodyparts_data
-    
     # Update the apply_data_filters callback to use the new data format
     @app.callback(
         [
@@ -220,3 +200,154 @@ def register_filter_callbacks(app):
         else:
             valid_value = 0.5 if input_value is None else max(0, min(1, input_value))
             return valid_value, valid_value
+    
+    # Trigger hidden upload component when load button is clicked
+    @app.callback(
+        Output("upload-config", "filename"),
+        [Input("load-config-btn", "n_clicks")],
+        prevent_initial_call=True
+    )
+    def trigger_config_upload(n_clicks):
+        """Trigger the hidden upload component when Load Config button is clicked."""
+        if n_clicks:
+            return None
+        raise dash.exceptions.PreventUpdate
+    
+    # Handle config file upload
+    @app.callback(
+        [
+            Output("num-animals-slider", "value", allow_duplicate=True),
+            Output("confidence-threshold-slider", "value", allow_duplicate=True),
+            Output("confidence-threshold-input", "value", allow_duplicate=True),
+            Output("bodyparts-names-store", "data", allow_duplicate=True)
+        ],
+        [Input("upload-config", "contents")],
+        [
+            State("upload-config", "filename"),
+            State("stored-raw-data", "data")
+        ],
+        prevent_initial_call=True
+    )
+    def load_config_file(contents, filename, raw_data):
+        """Load configuration from uploaded JSON file."""
+        if contents is None:
+            raise dash.exceptions.PreventUpdate
+        
+        # Parse the uploaded JSON file
+        try:
+            content_type, content_string = contents.split(',')
+            decoded = base64.b64decode(content_string).decode('utf-8')
+            
+            config = json.loads(decoded)
+            
+            # Extract values from config
+            num_animals = config.get("num_animals", 2)
+            confidence_threshold = config.get("confidence_threshold", 0.5)
+            bodyparts_data = config.get("bodyparts", {})
+            
+            print(f"Loaded config with {len(bodyparts_data)} bodyparts")
+            
+            return num_animals, confidence_threshold, confidence_threshold, bodyparts_data
+        
+        except Exception as e:
+            print(f"Error loading config: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            raise dash.exceptions.PreventUpdate
+    
+    # Save config to file
+    @app.callback(
+        Output("download-config", "data"),
+        [Input("save-config-btn", "n_clicks")],
+        [
+            State("num-animals-slider", "value"),
+            State("confidence-threshold-slider", "value"),
+            State("bodyparts-names-store", "data")
+        ],
+        prevent_initial_call=True
+    )
+    def save_config_file(n_clicks, num_animals, confidence_threshold, bodyparts_data):
+        """Save current configuration to a JSON file."""
+        if n_clicks is None:
+            raise dash.exceptions.PreventUpdate
+        
+        # Create config dictionary
+        config = {
+            "num_animals": num_animals,
+            "confidence_threshold": confidence_threshold,
+            "bodyparts": bodyparts_data if bodyparts_data else {}
+        }
+        
+        # Return as downloadable JSON file
+        return dict(
+            content=json.dumps(config, indent=2),
+            filename="dlc_filter_config.json",
+            type="application/json"
+        )
+    
+    @app.callback(
+        Output("upload-config", "contents"),
+        [Input("bodyparts-names-store", "data")],
+        [State("upload-config", "contents")]
+    )
+    def reset_upload(data, current_contents):
+        """Reset the upload component after loading config."""
+        # Only reset if there was content
+        if current_contents:
+            return None
+        raise dash.exceptions.PreventUpdate
+
+    # Update the callback that populates bodypart inputs from store
+    @app.callback(
+        [Output({"type": "bodypart-name", "index": ALL}, "value"),
+         Output({"type": "bodypart-checkbox", "index": ALL}, "value")],
+        [Input("bodyparts-names-store", "modified_timestamp")],  # Use modified_timestamp instead of data
+        [State("bodyparts-names-store", "data")],
+        prevent_initial_call=True
+    )
+    def update_bodypart_ui_from_store(timestamp, bodyparts_data):
+        """Update the bodypart UI components when the store is updated."""
+        if not timestamp or not bodyparts_data:
+            raise dash.exceptions.PreventUpdate
+        
+        # Collect all possible indices
+        max_index = max([int(idx) for idx in bodyparts_data.keys()]) if bodyparts_data else 0
+        
+        # Prepare arrays for all possible indices
+        names = [""] * (max_index + 1)
+        includes = [False] * (max_index + 1)
+        
+        # Fill in the data we have
+        for idx_str, data in bodyparts_data.items():
+            idx = int(idx_str)
+            if idx < len(names):
+                names[idx] = data.get("name", f"Bodypart {idx}")
+                includes[idx] = data.get("include", False)
+        
+        return names, includes
+
+    # Update the callback that updates store from bodypart inputs
+    @app.callback(
+        Output("bodyparts-names-store", "data", allow_duplicate=True),
+        [Input({"type": "bodypart-name", "index": ALL}, "value"),
+         Input({"type": "bodypart-checkbox", "index": ALL}, "value")],
+        [State("bodyparts-names-store", "modified_timestamp")],
+        prevent_initial_call=True  # Add this line
+    )
+    def update_bodyparts_store(names, includes, timestamp):
+        """Update the bodyparts store when inputs change."""
+        ctx = callback_context
+        
+        # Skip this update if it was triggered by the callback above (using timestamp)
+        if timestamp and ctx.triggered and ctx.triggered[0]['prop_id'] == "bodyparts-names-store.modified_timestamp":
+            raise dash.exceptions.PreventUpdate
+        
+        # Create data object
+        data = {}
+        for i, (name, include) in enumerate(zip(names, includes)):
+            data[str(i)] = {
+                "name": name or f"Bodypart {i}",
+                "include": include
+            }
+        
+        return data

@@ -1,5 +1,5 @@
 import dash_bootstrap_components as dbc
-from dash import html, dcc, dash_table
+from dash import html, dcc
 
 def create_filter_panel():
     """Create the data filtering interface for Step 2."""
@@ -14,6 +14,35 @@ def create_filter_panel():
                 color="secondary", 
                 id="data-summary"
             ),
+            
+            # Configuration file controls
+            dbc.Row([
+                dbc.Col([
+                    html.H5("Configuration:", className="mb-2"),
+                    html.Div([
+                        # Changed from justify-content-between to justify-content-start
+                        # and added me-2 to the first button for spacing
+                        html.Div([
+                            dcc.Upload(
+                                id="upload-config",
+                                children=dbc.Button(
+                                    "Load Config", 
+                                    id="load-config-btn", 
+                                    color="secondary",
+                                    className="me-2"  # Add margin to the right of the first button
+                                ),
+                                multiple=False
+                            ),
+                            dbc.Button(
+                                "Download Config", 
+                                id="save-config-btn", 
+                                color="secondary"
+                            ),
+                        ], className="d-flex justify-content-start w-100"),  # Changed from justify-content-between to justify-content-start
+                        dcc.Download(id="download-config"),
+                    ], className="mb-3"),
+                ], width=12),
+            ]),
             
             # Filtering options
             dbc.Row([
@@ -104,7 +133,21 @@ def create_filter_panel():
                 color="primary", 
                 className="mt-3",
                 disabled=True
-            )
+            ),
+            
+            # JavaScript to handle file upload click
+            html.Script('''
+            document.addEventListener('DOMContentLoaded', function() {
+                const loadBtn = document.getElementById('load-config-btn');
+                const upload = document.getElementById('upload-config');
+                
+                if(loadBtn && upload) {
+                    loadBtn.addEventListener('click', function() {
+                        upload.click();
+                    });
+                }
+            });
+            ''')
         ])
     ])
 
