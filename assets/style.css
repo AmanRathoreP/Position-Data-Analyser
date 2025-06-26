@@ -1,0 +1,55 @@
+/* Author: Aman Rathore */
+
+body {
+    font-family: "Open Sans", sans-serif;
+    background-color: #f8f9fa;
+}
+
+h1 {
+    color: #3c4b64;
+    margin-top: 20px;
+}
+
+.card {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.nav-tabs .nav-link.active {
+    font-weight: bold;
+    border-bottom: 3px solid #007bff;
+}
+
+.btn-primary {
+    background-color: #3c4b64;
+    border-color: #3c4b64;
+}
+
+.btn-primary:hover {
+    background-color: #293241;
+    border-color: #293241;
+}
+
+.footer {
+    margin-top: 20px;
+    padding: 10px 0;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #6c757d;
+}
+
+/* Upload box styling */
+.upload-box {
+    border: 2px dashed #cccccc;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin: 20px 0;
+    background-color: #f8f9fa;
+}
+
+/* Plot styling */
+.js-plotly-plot .plotly .modebar {
+    right: 20px !important;
+}
