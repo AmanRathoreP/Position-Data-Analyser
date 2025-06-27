@@ -45,8 +45,9 @@ def create_import_panel():
             
             # Next step button
             dbc.Button(
-                "Proceed to Filtering", 
-                id="proceed-to-filter-btn", 
+                "Fix Discontinuities", 
+                # id="proceed-to-filter-btn", 
+                id="proceed-to-discontinuity-btn", 
                 color="primary", 
                 className="mt-3",
                 disabled=True

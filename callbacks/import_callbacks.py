@@ -11,7 +11,7 @@ def register_import_callbacks(app):
             Output("file-info", "children"),
             Output("json-preview", "children"),
             Output("stored-raw-data", "data"),
-            Output("proceed-to-filter-btn", "disabled")
+            Output("proceed-to-discontinuity-btn", "disabled")
         ],
         [Input("upload-data", "contents")],
         [State("upload-data", "filename")]
@@ -65,12 +65,12 @@ def register_import_callbacks(app):
     
     @app.callback(
         Output("workflow-tabs", "active_tab"),
-        [Input("proceed-to-filter-btn", "n_clicks")],
+        [Input("proceed-to-discontinuity-btn", "n_clicks")],
         [State("stored-raw-data", "data")]
     )
-    def proceed_to_filter(n_clicks, data):
-        """Proceed to the filter tab when the button is clicked."""
+    def proceed_to_discontinuity(n_clicks, data):
+        """Proceed to the fix discontinuity tab when the button is clicked."""
         if n_clicks is None or not data:
             return "tab-import"
         
-        return "tab-filter"
+        return "tab-discontinuity"

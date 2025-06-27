@@ -8,7 +8,7 @@ import json
 import pandas as pd
 import dash_bootstrap_components as dbc
 
-from utils.data_processing import get_data_summary, filter_data, extract_time_series
+from utils.data_processing import get_data_summary, filter_data, extract_time_series, add_metadata_to_list
 from utils.plot_utils import create_time_series_plot
 
 def register_filter_callbacks(app):
@@ -20,15 +20,23 @@ def register_filter_callbacks(app):
             Output("bodyparts-container", "children")  # Change from "body-parts-dropdown", "options"
         ],
         [Input("workflow-tabs", "active_tab")],
-        [State("stored-raw-data", "data")]
+        [
+            State("stored-processed-data", "data"),
+            State("stored-raw-data", "data")
+        ]
     )
-    def update_filter_panel(active_tab, raw_data):
-        """Update the filter panel with data from the imported JSON."""
-        if active_tab != "tab-filter" or not raw_data:
+    def update_filter_panel(active_tab, processed_data, raw_data):
+        """Update the filter panel with data from the processed JSON (after discontinuity fix)."""
+        if active_tab != "tab-filter":
+            return "Import data first", []
+            
+        # Use processed data if available, otherwise fall back to raw data
+        data_to_use = processed_data if processed_data is not None else raw_data
+        if not data_to_use:
             return "Import data first", []
         
         # Get data summary
-        summary = get_data_summary(raw_data)
+        summary = get_data_summary(data_to_use)
         
         # Create data summary display
         summary_html = html.Div([
@@ -89,6 +97,7 @@ def register_filter_callbacks(app):
         ],
         [Input("apply-filters-btn", "n_clicks")],
         [
+            State("stored-processed-data", "data"),
             State("stored-raw-data", "data"),
             State("num-animals-slider", "value"),
             State("confidence-threshold-slider", "value"),
@@ -96,9 +105,14 @@ def register_filter_callbacks(app):
             State("workflow-tabs", "active_tab")
         ]
     )
-    def apply_data_filters(n_clicks, raw_data, num_animals, conf_threshold, bodypart_data, active_tab):
-        """Apply filters to the raw data and show preview."""
-        if n_clicks is None or not raw_data or active_tab != "tab-filter":
+    def apply_data_filters(n_clicks, processed_data, raw_data, num_animals, conf_threshold, bodypart_data, active_tab):
+        """Apply filters to the processed or raw data and show preview."""
+        if n_clicks is None or active_tab != "tab-filter":
+            return "Apply filters to see preview", {}, None, True
+            
+        # Use processed data if available, otherwise fall back to raw data
+        data_to_use = processed_data if processed_data is not None else raw_data
+        if not data_to_use:
             return "Apply filters to see preview", {}, None, True
         
         # Extract selected body part indices
@@ -115,7 +129,7 @@ def register_filter_callbacks(app):
         
         # Apply filters
         filtered_data = filter_data(
-            raw_data, 
+            data_to_use, 
             num_animals=num_animals, 
             confidence_threshold=conf_threshold,
             selected_bodyparts=selected_bodyparts
@@ -124,14 +138,14 @@ def register_filter_callbacks(app):
         # Store complete bodypart data in the filtered data
         if isinstance(filtered_data, dict) and 'metadata' in filtered_data:
             # It's already in the right format, just update the metadata
-            filtered_data['metadata'] = {'bodypart_names': bodypart_data}  # Use bodypart_data instead of bodypart_names
+            filtered_data['metadata']['bodypart_names'] = bodypart_data  # Use bodypart_data instead of bodypart_names
         else:
             # It's not in the right format, convert it
             filtered_data = add_metadata_to_list(filtered_data)
             filtered_data['metadata'] = {'bodypart_names': bodypart_data}  # Use bodypart_data instead of bodypart_names
         
         # Create preview info
-        original_summary = get_data_summary(raw_data)
+        original_summary = get_data_summary(data_to_use)
         filtered_summary = get_data_summary(filtered_data)
         
         # Get selected bodypart names for display
@@ -224,14 +238,18 @@ def register_filter_callbacks(app):
         [Input("upload-config", "contents")],
         [
             State("upload-config", "filename"),
+            State("stored-processed-data", "data"),
             State("stored-raw-data", "data")
         ],
         prevent_initial_call=True
     )
-    def load_config_file(contents, filename, raw_data):
+    def load_config_file(contents, filename, processed_data, raw_data):
         """Load configuration from uploaded JSON file."""
         if contents is None:
             raise dash.exceptions.PreventUpdate
+            
+        # Use processed data if available, otherwise fall back to raw data
+        data_to_use = processed_data if processed_data is not None else raw_data
         
         # Parse the uploaded JSON file
         try:
