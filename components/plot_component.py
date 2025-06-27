@@ -22,7 +22,8 @@ def create_plot_panel():
                         options=[
                             {"label": "X Position Over Time", "value": "time_series_x"},
                             {"label": "Y Position Over Time", "value": "time_series_y"},
-                            {"label": "Trajectory (X vs Y)", "value": "trajectory"}
+                            {"label": "Trajectory (X vs Y)", "value": "trajectory"},
+                            {"label": "Occupancy Heatmap", "value": "heatmap"}
                         ],
                         value="time_series_x",
                         clearable=False,

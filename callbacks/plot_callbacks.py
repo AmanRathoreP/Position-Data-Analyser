@@ -5,9 +5,10 @@ from dash import html
 import pandas as pd
 import json
 import numpy as np
+import plotly.graph_objs as go
 
 from utils.data_processing import get_data_summary, extract_time_series
-from utils.plot_utils import create_time_series_plot, create_trajectory_plot
+from utils.plot_utils import create_time_series_plot, create_trajectory_plot, create_heatmap
 
 def register_plot_callbacks(app):
     """Register callbacks for the visualization step."""
@@ -148,6 +149,22 @@ def register_plot_callbacks(app):
             return create_trajectory_plot(
                 df,
                 title=f"Trajectory: Animal {animal_idx+1}, {bodypart_name}"
+            )
+        elif plot_type == "heatmap" or plot_type == "Occupancy Heatmap":
+            # Filter out NaN values
+            valid_df = df.dropna(subset=['x', 'y'])
+            if valid_df.empty:
+                empty_fig = go.Figure()
+                empty_fig.update_layout(
+                    title=f"Not enough valid data points for heatmap (Animal {animal_idx+1}, {bodypart_name})",
+                    template="plotly_white"
+                )
+                return empty_fig
+                
+            return create_heatmap(
+                valid_df['x'].values,
+                valid_df['y'].values,
+                title=f"Occupancy Heatmap: Animal {animal_idx+1}, {bodypart_name}"
             )
         
         return {}
