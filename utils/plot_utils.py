@@ -5,54 +5,38 @@ import plotly.graph_objects as go
 import numpy as np
 from scipy.stats import gaussian_kde
 
-def create_time_series_plot(df, columns, title="", plot_type=None):
-    """Create a time series plot for the specified columns.
+def create_time_series_plot(df, columns, title="", plot_type=None, fps=30):
+    """Create a time series plot with proper time units based on FPS."""
+    # Determine best time unit to use based on total duration
+    if 'seconds' in df.columns:
+        max_seconds = df['seconds'].max()
+        
+        if max_seconds < 120:  # Less than 2 minutes, use seconds
+            time_col = 'seconds'
+            time_label = 'Time (seconds)'
+        else:  # Use minutes for longer recordings
+            time_col = 'minutes'
+            time_label = 'Time (minutes)'
+    else:
+        # Fallback to frames if time not calculated
+        time_col = 'frame'
+        time_label = 'Frame'
     
-    Parameters:
-    -----------
-    df : pandas.DataFrame
-        DataFrame containing the time series data
-    columns : str or list of str
-        Column(s) to plot
-    title : str
-        Plot title
-    plot_type : str, optional
-        Type of plot to create (e.g., 'line', 'scatter')
-    
-    Returns:
-    --------
-    dict
-        Plotly figure dictionary
-    """
-    if df.empty:
-        return {}
-    
-    # Handle trajectory plot (X vs Y)
-    if isinstance(columns, list) and len(columns) == 2 and plot_type == "scatter":
-        fig = px.scatter(
-            df, 
-            x=columns[0], 
-            y=columns[1], 
-            title=title
-        )
-        fig.update_layout(
-            xaxis_title="X Position",
-            yaxis_title="Y Position"
-        )
-        return fig
-    
-    # Regular time series plot
+    # Create the plot
     fig = px.line(
         df, 
-        x="frame", 
+        x=time_col, 
         y=columns, 
         title=title
     )
     
+    # Update axis labels
+    fig.update_xaxes(title_text=time_label)
+    
     return fig
 
-def create_heatmap(xs, ys, grid_size=100, title=None):
-    """Create an occupancy heatmap using Gaussian KDE."""
+def create_heatmap(xs, ys, grid_size=100, title=None, fps=30):
+    """Create an occupancy heatmap using Gaussian KDE with support for time information."""
     # Drop any NaNs
     mask = ~(np.isnan(xs) | np.isnan(ys))
     xs_clean = xs[mask]
@@ -97,8 +81,18 @@ def create_heatmap(xs, ys, grid_size=100, title=None):
         colorbar=dict(title="Density")
     ))
     
+    # Add time information to the title if needed
+    duration_sec = len(xs) / fps if fps > 0 else 0
+    if duration_sec >= 60:
+        duration_str = f"{duration_sec/60:.1f} minutes"
+    else:
+        duration_str = f"{duration_sec:.1f} seconds"
+    
+    display_title = title or "Occupancy Heatmap"
+    display_title = f"{display_title} (Duration: {duration_str})"
+    
     fig.update_layout(
-        title=title or "Occupancy Heatmap",
+        title=display_title,
         xaxis_title="X coordinate",
         yaxis_title="Y coordinate",
         template="plotly_white"
@@ -106,8 +100,8 @@ def create_heatmap(xs, ys, grid_size=100, title=None):
     
     return fig
 
-def create_trajectory_plot(df, title=None):
-    """Create a trajectory plot using the x and y position data."""
+def create_trajectory_plot(df, title=None, fps=30):
+    """Create a trajectory plot using the x and y position data with time information."""
     if df.empty or df["x"].isna().all() or df["y"].isna().all():
         fig = go.Figure()
         fig.update_layout(
@@ -116,10 +110,26 @@ def create_trajectory_plot(df, title=None):
         )
         return fig
     
-    # Create a colorscale based on frame number for temporal information
-    fig = px.scatter(df, x="x", y="y", color="frame",
+    # Determine best time column to use for coloring
+    if 'seconds' in df.columns:
+        max_seconds = df['seconds'].max()
+        
+        if max_seconds < 120:  # Less than 2 minutes, use seconds
+            time_col = 'seconds'
+            time_label = 'Time (seconds)'
+        else:  # Use minutes for longer recordings
+            time_col = 'minutes'
+            time_label = 'Time (minutes)'
+    else:
+        # Fallback to frames if time not calculated
+        time_col = 'frame'
+        time_label = 'Frame'
+    
+    # Create a colorscale based on time for temporal information
+    fig = px.scatter(df, x="x", y="y", color=time_col,
                      color_continuous_scale="Viridis",
-                     title=title or "Movement Trajectory")
+                     title=title or "Movement Trajectory",
+                     labels={time_col: time_label})
     
     # Add lines connecting the points
     fig.add_trace(go.Scatter(
@@ -133,7 +143,8 @@ def create_trajectory_plot(df, title=None):
     fig.update_layout(
         xaxis_title="X coordinate",
         yaxis_title="Y coordinate",
-        template="plotly_white"
+        template="plotly_white",
+        coloraxis_colorbar=dict(title=time_label)
     )
     
     return fig

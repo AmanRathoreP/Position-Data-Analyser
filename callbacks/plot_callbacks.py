@@ -132,23 +132,26 @@ def register_plot_callbacks(app):
                     bodypart_name = bp_names[str(bodypart_idx)]
         
         # Extract time series for selected animal and bodypart
-        df = extract_time_series(filtered_data, animal_idx, bodypart_idx)
+        df, fps = extract_time_series(filtered_data, animal_idx, bodypart_idx)
         
         # Generate the appropriate plot
         if plot_type == "time_series_x" or plot_type == "X Position Over Time":
             return create_time_series_plot(
                 df, "x", 
-                title=f"X Position: Animal {animal_idx+1}, {bodypart_name}"
+                title=f"X Position: Animal {animal_idx+1}, {bodypart_name}",
+                fps=fps
             )
         elif plot_type == "time_series_y" or plot_type == "Y Position Over Time":
             return create_time_series_plot(
                 df, "y", 
-                title=f"Y Position: Animal {animal_idx+1}, {bodypart_name}"
+                title=f"Y Position: Animal {animal_idx+1}, {bodypart_name}",
+                fps=fps  # Add fps parameter here
             )
         elif plot_type == "trajectory" or plot_type == "Trajectory (X vs Y)":
             return create_trajectory_plot(
                 df,
-                title=f"Trajectory: Animal {animal_idx+1}, {bodypart_name}"
+                title=f"Trajectory: Animal {animal_idx+1}, {bodypart_name}",
+                fps=fps  # Add fps parameter here
             )
         elif plot_type == "heatmap" or plot_type == "Occupancy Heatmap":
             # Filter out NaN values
@@ -164,7 +167,8 @@ def register_plot_callbacks(app):
             return create_heatmap(
                 valid_df['x'].values,
                 valid_df['y'].values,
-                title=f"Occupancy Heatmap: Animal {animal_idx+1}, {bodypart_name}"
+                title=f"Occupancy Heatmap: Animal {animal_idx+1}, {bodypart_name}",
+                fps=fps  # Add fps parameter here
             )
         
         return {}

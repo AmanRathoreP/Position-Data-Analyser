@@ -92,6 +92,26 @@ def create_filter_panel():
                         ], className="mb-4")
                     ]),
                     
+                    # Add FPS input field
+                    html.Label("Frames Per Second (FPS):"),
+                    dbc.Row([
+                        dbc.Col([
+                            dbc.Input(
+                                id="fps-input",
+                                type="number",
+                                min=1,
+                                max=1000,
+                                step=1,
+                                value=30,
+                                placeholder="Enter FPS (e.g., 30)",
+                                style={"width": "100%"}
+                            ),
+                        ], width=6),
+                        dbc.Col([
+                            html.Small("Used to convert frames to time units in plots", className="text-muted")
+                        ], width=6)
+                    ], className="mb-4"),
+                    
                     # Body parts of interest - custom component with checkboxes
                     html.Label("Body Parts of Interest:", className="mt-3"),
                     html.P("Assign names to body parts and select which ones to include:", className="mb-2"),

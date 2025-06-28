@@ -96,8 +96,13 @@ def extract_time_series(filtered_data, animal_idx, bodypart_idx):
     # Handle different data storage formats
     if isinstance(filtered_data, dict) and 'data' in filtered_data:
         data = filtered_data['data']
+        metadata = filtered_data.get('metadata', {})
     else:
         data = filtered_data
+        metadata = {}
+    
+    # Get FPS value from metadata or use default
+    fps = metadata.get('fps', 30)  # Default to 30 fps if not specified
     
     frames = []
     x_values = []
@@ -119,7 +124,11 @@ def extract_time_series(filtered_data, animal_idx, bodypart_idx):
         'y': y_values
     })
     
-    return df
+    # Add time columns based on FPS
+    df['seconds'] = df['frame'] / fps
+    df['minutes'] = df['seconds'] / 60
+    
+    return df, fps
 
 def create_occupancy_data(data, animal_idx, bodypart_idx, grid_size=100):
     """Create occupancy heatmap data for a specific animal and bodypart."""

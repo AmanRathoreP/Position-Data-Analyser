@@ -101,11 +101,12 @@ def register_filter_callbacks(app):
             State("stored-raw-data", "data"),
             State("num-animals-slider", "value"),
             State("confidence-threshold-slider", "value"),
-            State("bodyparts-names-store", "data"),  # Change from "body-parts-dropdown", "value"
+            State("bodyparts-names-store", "data"),
+            State("fps-input", "value"),  # Add FPS input state
             State("workflow-tabs", "active_tab")
         ]
     )
-    def apply_data_filters(n_clicks, processed_data, raw_data, num_animals, conf_threshold, bodypart_data, active_tab):
+    def apply_data_filters(n_clicks, processed_data, raw_data, num_animals, conf_threshold, bodypart_data, fps, active_tab):
         """Apply filters to the processed or raw data and show preview."""
         if n_clicks is None or active_tab != "tab-filter":
             return "Apply filters to see preview", {}, None, True
@@ -135,14 +136,16 @@ def register_filter_callbacks(app):
             selected_bodyparts=selected_bodyparts
         )
         
-        # Store complete bodypart data in the filtered data
+        # Store complete bodypart data and FPS in the filtered data
         if isinstance(filtered_data, dict) and 'metadata' in filtered_data:
-            # It's already in the right format, just update the metadata
-            filtered_data['metadata']['bodypart_names'] = bodypart_data  # Use bodypart_data instead of bodypart_names
+            filtered_data['metadata']['bodypart_names'] = bodypart_data
+            filtered_data['metadata']['fps'] = fps  # Store FPS in metadata
         else:
-            # It's not in the right format, convert it
             filtered_data = add_metadata_to_list(filtered_data)
-            filtered_data['metadata'] = {'bodypart_names': bodypart_data}  # Use bodypart_data instead of bodypart_names
+            filtered_data['metadata'] = {
+                'bodypart_names': bodypart_data,
+                'fps': fps  # Store FPS in metadata
+            }
         
         # Create preview info
         original_summary = get_data_summary(data_to_use)
@@ -170,14 +173,15 @@ def register_filter_callbacks(app):
             bodypart_idx = selected_bodyparts[0] if selected_bodyparts else 0
             bodypart_name = bodypart_names.get(str(bodypart_idx), f"Bodypart {bodypart_idx}")
             
-            # Extract time series
-            df = extract_time_series(filtered_data, animal_idx, bodypart_idx)
+            # Extract time series and get fps
+            df, fps = extract_time_series(filtered_data, animal_idx, bodypart_idx)
             
             # Create plot
             figure = create_time_series_plot(
                 df, 
                 "x", 
-                title=f"Preview: Animal {animal_idx+1}, {bodypart_name} X Position"
+                title=f"Preview: Animal {animal_idx+1}, {bodypart_name} X Position",
+                fps=fps
             )
         
         return preview_html, figure, filtered_data, False
