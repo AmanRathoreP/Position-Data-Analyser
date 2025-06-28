@@ -223,3 +223,4 @@ pyrightconfig.json
 
 # apps ignore starts here
 **_config.json
+notebooks/
