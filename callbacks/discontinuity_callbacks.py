@@ -66,7 +66,7 @@ def register_discontinuity_callbacks(app):
             Output("discontinuity-preview-plot", "figure", allow_duplicate=True),
             Output("discontinuity-preview", "children", allow_duplicate=True),
             Output("stored-processed-data", "data"),
-            Output("proceed-to-filter-btn-discontinuity", "disabled")
+            Output("proceed-to-zones-btn-discontinuity", "disabled")
         ],
         [Input("fix-discontinuities-btn", "n_clicks")],
         [
@@ -194,19 +194,18 @@ def register_discontinuity_callbacks(app):
         # Return the figure, preview text, processed data, and enable the proceed button
         return fig, preview_text, processed_data, False
     
-    # Add new callback for the "Proceed to Filtering" button
+    # Add callback for the "Proceed to Zones" button
     @app.callback(
         Output("workflow-tabs", "active_tab", allow_duplicate=True),
-        [Input("proceed-to-filter-btn-discontinuity", "n_clicks")],
+        [Input("proceed-to-zones-btn-discontinuity", "n_clicks")],
         [State("stored-processed-data", "data")],
         prevent_initial_call=True
     )
-    def proceed_to_filtering(n_clicks, processed_data):
+    def proceed_to_zones(n_clicks, processed_data):
         """Proceed to the filter tab when the button is clicked."""
         if n_clicks is None or not processed_data:
             raise dash.exceptions.PreventUpdate
-        
-        return "tab-filter"
+        return "tab-zones"
     
     @app.callback(
         Output("download-processed-json", "data"),

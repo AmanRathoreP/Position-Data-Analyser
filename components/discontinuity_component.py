@@ -125,8 +125,8 @@ def create_discontinuity_panel():
             
             # Next step button
             dbc.Button(
-                "Proceed to Filtering",
-                id="proceed-to-filter-btn-discontinuity",
+                "Proceed to Zones",
+                id="proceed-to-zones-btn-discontinuity",
                 color="primary",
                 className="mt-3",
                 disabled=True

@@ -8,6 +8,7 @@ from app import app
 from layouts.main_layout import create_layout
 from callbacks.import_callbacks import register_import_callbacks
 from callbacks.discontinuity_callbacks import register_discontinuity_callbacks
+from callbacks.zone_callbacks import register_zone_callbacks
 from callbacks.filter_callbacks import register_filter_callbacks
 from callbacks.plot_callbacks import register_plot_callbacks
 
@@ -17,6 +18,7 @@ app.layout = create_layout()
 # Register callbacks
 register_import_callbacks(app)
 register_discontinuity_callbacks(app)
+register_zone_callbacks(app)
 register_filter_callbacks(app)
 register_plot_callbacks(app)
 
