@@ -99,11 +99,11 @@ def create_filter_panel():
                             dbc.Input(
                                 id="fps-input",
                                 type="number",
-                                min=1,
+                                min=0.01,           # allow small positive decimals
                                 max=1000,
-                                step=1,
+                                step=0.01,          # allow decimal steps
                                 value=30,
-                                placeholder="Enter FPS (e.g., 30)",
+                                placeholder="Enter FPS (e.g., 30.0)",
                                 style={"width": "100%"}
                             ),
                         ], width=6),
